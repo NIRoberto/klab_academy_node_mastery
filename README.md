@@ -546,8 +546,8 @@ describe('User API', () => {
 ```json
 {
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "dev": "nodemon ts-node src/server.js",
+    "start": "node ts-node src/server.js",
     "test": "jest",
     "test:watch": "jest --watch"
   }
@@ -601,7 +601,7 @@ my-node-app/
 3. **Create basic server**
    ```javascript
    // src/server.js
-   const express = require('express');
+   import express from "express"  
    const app = express();
    
    app.use(express.json());
@@ -620,8 +620,8 @@ my-node-app/
    ```json
    {
      "scripts": {
-       "dev": "nodemon src/server.js",
-       "start": "node src/server.js"
+       "dev": "nodemon ts-node src/server.js",
+       "start": "ts-node src/server.js"
      }
    }
    ```
