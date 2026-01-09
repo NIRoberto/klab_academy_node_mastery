@@ -1,0 +1,58 @@
+- New packages and usages
+
+- MiddleWare (Built in, custom )
+
+  - what is middleware
+  - Custom
+  - Build-in middleware
+
+- Node application basics structure (Routes, Middleware, Models, Controllers, )
+
+  Routes ( resouces )
+
+  having examples (
+  Users,
+  products
+
+  )
+
+  Controllers (
+
+        users controllers
+        products
+
+  )
+
+  / Controllers are functions help separate implementation or logic of endpoints for resources or routers
+
+  Models (
+
+  )
+
+- REST and basics CRUD operation for our app.
+
+REST stand for Representational state transfer
+
+Definition on REST is a way to designing an API( Application programming interface) for the purpose of communication of applications on the internet.
+
+RESTful APIs
+
+REST principles
+
+1. Client-server separation ( )
+2. Stateless (  each request must have  all informations)
+3. Uniform interface( 
+     
+      users 
+   
+    )
+4. HTTP Methods and their Meaning ( Get, POST, DELETE, PUT, PATCH )
+
+
+5. Standard Response ()
+
+CRUD operations
+Request methods (GET, POST, PUT, DELETE, PATCH)
+Status codes
+JSON responses
+Query parameters and body parsing
