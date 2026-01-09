@@ -1,6 +1,3 @@
-Here’s a **cleaned up, simpler, and more beginner-friendly version** of your content. I kept it clear, structured, and easy to teach or learn from 👌
-
----
 
 ## 1. New Packages and Their Usage
 
