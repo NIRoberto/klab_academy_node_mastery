@@ -54,6 +54,49 @@ const product = new Product({ name: 'Laptop', price: 999 });
 await product.save();
 ```
 
+### Schema and Models
+
+**Technical Definitions:**
+
+**Schema** - A Mongoose schema defines the structure, data types, validation rules, and default values for documents in a MongoDB collection. It acts as a blueprint that enforces data consistency and integrity.
+
+**Model** - A Mongoose model is a compiled version of a schema that provides an interface to interact with a specific MongoDB collection. It includes methods for querying, creating, updating, and deleting documents.
+
+
+**Code Example:**
+```typescript
+// Schema - defines structure and validation rules
+const UserSchema = new Schema({
+  name: { type: String, required: true, maxlength: 50 },
+  email: { type: String, required: true, unique: true },
+  age: { type: Number, min: 18, max: 100 }
+});
+
+// Model - compiled schema with database methods
+const User = mongoose.model('User', UserSchema);
+
+// Using the model to interact with database
+const user = new User({ name: 'John', email: 'john@email.com', age: 25 });
+await user.save(); // CREATE
+const users = await User.find(); // READ
+await User.findByIdAndUpdate(id, { age: 26 }); // UPDATE
+await User.findByIdAndDelete(id); // DELETE
+```
+
+**Key Differences:**
+
+| Schema | Model |
+|---|---|
+| **Definition** - Structure and rules | **Implementation** - Database operations |
+| Validation, types, defaults | Create, read, update, delete methods |
+| `new Schema({ ... })` | `mongoose.model('Name', schema)` |
+| Blueprint/template | Working interface |
+
+**Process:**
+1. **Define Schema** - Set structure and validation rules
+2. **Compile Model** - Create database interface from schema
+3. **Use Model** - Perform database operations
+
 ### Why Use Mongoose?
 
 * **Schema validation** - Ensures data quality
