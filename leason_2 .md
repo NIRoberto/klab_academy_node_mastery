@@ -82,9 +82,7 @@ REST stands for **Representational State Transfer**.
 
 REST is a way of **designing APIs** so that applications can communicate with each other over the internet in a clear and consistent way.
 
-### RESTful APIs
-
-A RESTful API follows REST rules and conventions to manage resources like users and products.
+### RESTful APIsESTful API follows REST rules and conventions to manage resources like users and products.
 
 ---
 
