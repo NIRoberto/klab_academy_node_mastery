@@ -31,13 +31,6 @@ MongoDB is a **NoSQL database** that stores data in flexible, JSON-like document
 | Easy to scale horizontally | Complex to scale |
 | Great for rapid development | Great for complex relationships |
 
-### Why Use MongoDB with Node.js?
-
-* **Same language** - JavaScript objects ↔ MongoDB documents
-* **No complex joins** - Embedded documents instead
-* **Fast development** - No need to design rigid schemas upfront
-* **JSON everywhere** - API responses match database format
-
 ### What is Mongoose?
 
 **Mongoose** is an **ODM (Object Document Mapper)** that makes working with MongoDB easier.
