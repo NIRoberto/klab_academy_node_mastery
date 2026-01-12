@@ -1,4 +1,4 @@
-# Lesson 3: MongoDB Integration & Authentication
+# Lesson 3: MongoDB Integration
 
 ## 1. Database Integration with MongoDB
 
