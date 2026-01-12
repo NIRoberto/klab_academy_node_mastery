@@ -6,30 +6,12 @@
 
 MongoDB is a **NoSQL database** that stores data in flexible, JSON-like documents.
 
-### Why Use MongoDB?
-
-**Problem with In-Memory Data:**
-* Data disappears when server restarts
-* Cannot handle large amounts of data
-* No data persistence
-* Cannot share data between multiple servers
-
-**MongoDB Solutions:**
-* **Persistent storage** - Data survives server restarts
-* **Scalable** - Handles millions of records
-* **JSON-like format** - Natural fit for JavaScript/Node.js
-* **Flexible schema** - Easy to modify data structure
-* **Rich queries** - Complex searching and filtering
-
-### MongoDB vs SQL Databases
-
-| MongoDB (NoSQL) | SQL Databases |
-|---|---|
-| Documents (JSON-like) | Tables with rows/columns |
-| Collections | Tables |
-| Flexible schema | Fixed schema |
-| Easy to scale horizontally | Complex to scale |
-| Great for rapid development | Great for complex relationships |
+**Key Definitions:**
+- **NoSQL Database** - A database that doesn't use traditional table structure, stores data in flexible formats
+- **Document** - A record in MongoDB, similar to a JSON object with key-value pairs
+- **Collection** - A group of documents, similar to a table in SQL databases
+- **BSON** - Binary JSON format that MongoDB uses internally to store documents
+- **Schema-less** - No predefined structure required, documents can have different fields
 
 ### What is Mongoose?
 
@@ -333,7 +315,251 @@ try {
 
 ---
 
-## 4. Database Operations (CRUD)
+## 4. Common Mongoose Methods
+
+### CREATE Methods
+
+**Model.create()** - Creates one or more documents
+```typescript
+// Create single document
+const product = await Product.create({
+  name: 'Laptop',
+  price: 999,
+  category: 'electronics'
+});
+
+// Create multiple documents
+const products = await Product.create([
+  { name: 'Laptop', price: 999, category: 'electronics' },
+  { name: 'Phone', price: 599, category: 'electronics' }
+]);
+```
+
+**new Model() + save()** - Create instance then save
+```typescript
+const product = new Product({
+  name: 'Laptop',
+  price: 999
+});
+const savedProduct = await product.save();
+```
+
+**Model.insertMany()** - Insert multiple documents (faster for bulk)
+```typescript
+const products = await Product.insertMany([
+  { name: 'Laptop', price: 999 },
+  { name: 'Phone', price: 599 }
+]);
+```
+
+### READ Methods
+
+**Model.find()** - Find multiple documents
+```typescript
+// Find all products
+const allProducts = await Product.find();
+
+// Find with conditions
+const electronics = await Product.find({ category: 'electronics' });
+
+// Find with multiple conditions
+const cheapElectronics = await Product.find({
+  category: 'electronics',
+  price: { $lt: 1000 }
+});
+```
+
+**Model.findOne()** - Find single document
+```typescript
+// Find first matching document
+const product = await Product.findOne({ name: 'Laptop' });
+
+// Returns null if not found
+if (!product) {
+  console.log('Product not found');
+}
+```
+
+**Model.findById()** - Find by MongoDB ObjectId
+```typescript
+const product = await Product.findById('64f8a1b2c3d4e5f6a7b8c9d0');
+
+// With error handling
+const product = await Product.findById(id);
+if (!product) {
+  throw new Error('Product not found');
+}
+```
+
+**Model.findByIdAndUpdate()** - Find and update in one operation
+```typescript
+const updatedProduct = await Product.findByIdAndUpdate(
+  id,
+  { price: 899 },
+  { new: true, runValidators: true }
+);
+```
+
+**Model.findOneAndUpdate()** - Find by condition and update
+```typescript
+const updatedProduct = await Product.findOneAndUpdate(
+  { name: 'Laptop' },
+  { price: 899 },
+  { new: true }
+);
+```
+
+### UPDATE Methods
+
+**Model.updateOne()** - Update single document
+```typescript
+const result = await Product.updateOne(
+  { _id: id },
+  { price: 899 }
+);
+console.log(result.modifiedCount); // Number of documents modified
+```
+
+**Model.updateMany()** - Update multiple documents
+```typescript
+const result = await Product.updateMany(
+  { category: 'electronics' },
+  { inStock: true }
+);
+console.log(result.modifiedCount);
+```
+
+**Model.replaceOne()** - Replace entire document
+```typescript
+const result = await Product.replaceOne(
+  { _id: id },
+  { name: 'New Laptop', price: 1299, category: 'electronics' }
+);
+```
+
+### DELETE Methods
+
+**Model.deleteOne()** - Delete single document
+```typescript
+const result = await Product.deleteOne({ _id: id });
+console.log(result.deletedCount); // Number of documents deleted
+```
+
+**Model.deleteMany()** - Delete multiple documents
+```typescript
+const result = await Product.deleteMany({ category: 'electronics' });
+console.log(result.deletedCount);
+```
+
+**Model.findByIdAndDelete()** - Find and delete by ID
+```typescript
+const deletedProduct = await Product.findByIdAndDelete(id);
+if (deletedProduct) {
+  console.log('Product deleted:', deletedProduct.name);
+}
+```
+
+**Model.findOneAndDelete()** - Find and delete by condition
+```typescript
+const deletedProduct = await Product.findOneAndDelete({ name: 'Laptop' });
+```
+
+### QUERY Methods
+
+**Model.countDocuments()** - Count documents
+```typescript
+const totalProducts = await Product.countDocuments();
+const electronicsCount = await Product.countDocuments({ category: 'electronics' });
+```
+
+**Model.exists()** - Check if document exists
+```typescript
+const exists = await Product.exists({ name: 'Laptop' });
+if (exists) {
+  console.log('Product exists with ID:', exists._id);
+}
+```
+
+**Model.distinct()** - Get distinct values
+```typescript
+const categories = await Product.distinct('category');
+// Returns: ['electronics', 'clothing', 'books']
+```
+
+### QUERY CHAINING
+
+**Chaining Methods** - Combine multiple query operations
+```typescript
+const products = await Product
+  .find({ category: 'electronics' })  // Filter
+  .select('name price')               // Select specific fields
+  .sort({ price: -1 })               // Sort by price descending
+  .limit(10)                         // Limit to 10 results
+  .skip(20);                         // Skip first 20 results
+```
+
+**Common Query Options:**
+```typescript
+// Select specific fields
+const products = await Product.find().select('name price -_id');
+
+// Sort results
+const products = await Product.find().sort({ createdAt: -1 }); // Newest first
+const products = await Product.find().sort({ price: 1 });      // Cheapest first
+
+// Pagination
+const products = await Product.find()
+  .skip((page - 1) * limit)
+  .limit(limit);
+
+// Population (join-like operation)
+const cart = await Cart.findById(id).populate('items.productId');
+```
+
+### AGGREGATION Methods
+
+**Model.aggregate()** - Complex data processing
+```typescript
+// Group products by category and count
+const categoryStats = await Product.aggregate([
+  {
+    $group: {
+      _id: '$category',
+      count: { $sum: 1 },
+      avgPrice: { $avg: '$price' }
+    }
+  }
+]);
+```
+
+### Method Options
+
+**Common Options for Update Methods:**
+```typescript
+const options = {
+  new: true,           // Return updated document
+  runValidators: true, // Run schema validation
+  upsert: true        // Create if doesn't exist
+};
+
+const product = await Product.findByIdAndUpdate(id, data, options);
+```
+
+**Common Options for Find Methods:**
+```typescript
+const options = {
+  lean: true,          // Return plain JavaScript objects (faster)
+  populate: 'category', // Populate referenced fields
+  select: 'name price', // Select specific fields
+  sort: { createdAt: -1 } // Sort results
+};
+
+const products = await Product.find({}, null, options);
+```
+
+---
+
+## 5. Database Operations (CRUD)
 
 ### Service Layer with Database
 
@@ -500,242 +726,3 @@ export const createProduct = async (req: Request, res: Response) => {
 * **MongoError 11000** - Duplicate key violation
 * **Connection errors** - Database unavailable
 
----
-
-## 7. Authentication & Authorization
-
-### What is Authentication?
-
-**Authentication** verifies **who** the user is (login process).
-
-**Authorization** determines **what** the user can access (permissions).
-
-### JWT (JSON Web Tokens)
-
-JWT is a secure way to transmit information between parties.
-
-**Structure:** `header.payload.signature`
-
-### Installing Authentication Packages
-
-```bash
-npm install bcryptjs jsonwebtoken
-npm install -D @types/bcryptjs @types/jsonwebtoken
-```
-
-### User Model with Password Hashing
-
-```typescript
-// models/User.ts
-import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcryptjs';
-
-export interface IUser extends Document {
-  email: string;
-  password: string;
-  name: string;
-  role: 'user' | 'admin';
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
-
-const UserSchema = new Schema<IUser>({
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true,
-    lowercase: true
-  },
-  password: { 
-    type: String, 
-    required: true,
-    minlength: 6
-  },
-  name: { 
-    type: String, 
-    required: true 
-  },
-  role: { 
-    type: String, 
-    enum: ['user', 'admin'], 
-    default: 'user' 
-  }
-}, {
-  timestamps: true
-});
-
-// Hash password before saving
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Compare password method
-UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-export const User = mongoose.model<IUser>('User', UserSchema);
-```
-
-### Authentication Service
-
-```typescript
-// services/AuthService.ts
-import jwt from 'jsonwebtoken';
-import { User, IUser } from '../models/User';
-
-// Register new user
-export const registerUser = async (userData: { email: string; password: string; name: string }): Promise<{ user: IUser; token: string }> => {
-  const existingUser = await User.findOne({ email: userData.email });
-  if (existingUser) {
-    throw new Error('User already exists');
-  }
-
-  const user = await User.create(userData);
-  const token = generateToken(user._id);
-
-  return { user, token };
-};
-
-// Login user
-export const loginUser = async (email: string, password: string): Promise<{ user: IUser; token: string }> => {
-  const user = await User.findOne({ email });
-  if (!user || !(await user.comparePassword(password))) {
-    throw new Error('Invalid credentials');
-  }
-
-  const token = generateToken(user._id);
-  return { user, token };
-};
-
-// Generate JWT token
-export const generateToken = (userId: string): string => {
-  return jwt.sign(
-    { userId }, 
-    process.env.JWT_SECRET!, 
-    { expiresIn: '7d' }
-  );
-};
-
-// Verify JWT token
-export const verifyToken = (token: string): any => {
-  return jwt.verify(token, process.env.JWT_SECRET!);
-};
-```
-```
-
-### Authentication Middleware
-
-```typescript
-// middleware/auth.ts
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../services/AuthService';
-import { User } from '../models/User';
-
-interface AuthRequest extends Request {
-  user?: any;
-}
-
-export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
-    }
-
-    const decoded = verifyToken(token);
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token.' });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token.' });
-  }
-};
-
-// Authorization middleware
-export const authorize = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
-    }
-    next();
-  };
-};
-```
-
-### Protected Routes
-
-```typescript
-// routes/products.ts
-import { Router } from 'express';
-import { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct } from '../controllers/ProductController';
-import { authenticate, authorize } from '../middleware/auth';
-
-const router = Router();
-
-// Public routes
-router.get('/', getAllProducts);
-router.get('/:id', getProductById);
-
-// Protected routes (authentication required)
-router.post('/', authenticate, createProduct);
-router.put('/:id', authenticate, updateProduct);
-
-// Admin only routes (authentication + authorization)
-router.delete('/:id', authenticate, authorize(['admin']), deleteProduct);
-
-export default router;
-```
-
-### Authentication Flow
-
-1. **Register/Login** - User provides credentials
-2. **Password Hashing** - Store secure password hash
-3. **JWT Generation** - Create signed token
-4. **Token Storage** - Client stores token (localStorage/cookies)
-5. **Request Authentication** - Send token in Authorization header
-6. **Token Verification** - Server validates token
-7. **User Authorization** - Check user permissions
-
-### Environment Variables for Auth
-
-```bash
-# .env
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=7d
-BCRYPT_ROUNDS=12
-```
-
----
-
-## 8. Security Best Practices
-
-### Input Validation
-
-* Always validate user input
-* Use schema validation
-* Sanitize data before database operations
-* Implement rate limiting
-
-### Password Security
-
-* Hash passwords with bcrypt
-* Use strong JWT secrets
-* Implement password complexity rules
-* Add password reset functionality
-
-### API Security
-
-* Use HTTPS in production
-* Implement CORS properly
-* Add request rate limiting
-* Validate all inputs
-* Use environment variables for secrets
