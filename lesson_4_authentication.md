@@ -454,9 +454,388 @@ export const authorize = (roles: string[]) => {
   };
 };
 ```
+
 ---
 
-## 8. Routes
+## 8. Role-based Access Control (RBAC)
+
+### What is RBAC?
+
+**Role-based Access Control** determines what actions users can perform based on their assigned roles.
+
+### Common E-commerce Roles (4 Essential Roles)
+
+| Role | Permissions | Use Case |
+|---|---|---|
+| **Customer** | View products, manage own orders, update profile | Regular shoppers |
+| **Vendor** | Manage own products, view own sales | Sellers on marketplace |
+| **Admin** | Full access to all resources | Site administrators |
+| **Guest** | View products only | Browsing visitors |
+
+### E-commerce Role Implementation
+
+```typescript
+// models/User.ts - Updated roles for e-commerce
+const UserSchema = new Schema({
+  // ... other fields
+  role: {
+    type: String,
+    enum: ['customer', 'vendor', 'admin', 'guest'],
+    default: 'customer'
+  },
+  // Vendor-specific fields
+  storeName: {
+    type: String,
+    required: function() { return this.role === 'vendor'; }
+  }
+});
+```
+
+### E-commerce RBAC Examples
+
+```typescript
+// middleware/ecommerceRBAC.ts
+import { Request, Response, NextFunction } from 'express';
+
+interface AuthRequest extends Request {
+  user?: any;
+}
+
+// Customer can only access their own orders
+export const requireCustomerOwnership = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const customerId = req.params.customerId || req.body.customerId;
+  const currentUserId = req.user._id.toString();
+  
+  if (currentUserId !== customerId && req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Access denied. You can only access your own orders.'
+    });
+  }
+  next();
+};
+
+// Vendor can only manage their own products
+export const requireVendorOwnership = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user.role === 'vendor') {
+    // Vendor can manage their own products
+    return next();
+  }
+  
+  if (req.user.role === 'admin') {
+    // Admin can manage any products
+    return next();
+  }
+  
+  return res.status(403).json({
+    error: 'Access denied. Vendors can only manage their own products.'
+  });
+};
+```
+
+### E-commerce Route Examples
+
+```typescript
+// routes/orders.ts
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { requireCustomerOwnership } from '../middleware/ecommerceRBAC';
+
+const router = Router();
+
+// Customer routes
+router.get('/customer/:customerId', authenticate, requireCustomerOwnership, getCustomerOrders);
+router.post('/', authenticate, createOrder); // Any authenticated user can create order
+
+// Admin routes
+router.get('/all', authenticate, requireRole('admin'), getAllOrders);
+router.delete('/:id', authenticate, requireRole('admin'), deleteOrder);
+
+export default router;
+```
+
+```typescript
+// routes/products.ts - E-commerce specific
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { requireVendorOwnership, requireAnyRole } from '../middleware/ecommerceRBAC';
+
+const router = Router();
+
+// Public routes
+router.get('/', getAllProducts); // Anyone can view products
+router.get('/:id', getProductById);
+
+// Vendor and Admin can create products
+router.post('/', authenticate, requireAnyRole(['vendor', 'admin']), createProduct);
+
+// Vendor can update own products, Admin can update any
+router.put('/:id', authenticate, requireVendorOwnership, updateProduct);
+
+// Only Admin can delete products
+router.delete('/:id', authenticate, requireRole('admin'), deleteProduct);
+
+export default router;
+```
+
+### E-commerce Permission Matrix (4 Roles)
+
+| Action | Customer | Vendor | Admin | Guest |
+|---|---|---|---|---|
+| View Products | ✅ | ✅ | ✅ | ✅ |
+| Create Products | ❌ | ✅ | ✅ | ❌ |
+| Update Own Products | ❌ | ✅ | ✅ | ❌ |
+| Update Any Products | ❌ | ❌ | ✅ | ❌ |
+| Delete Products | ❌ | ❌ | ✅ | ❌ |
+| View Own Orders | ✅ | ✅ | ✅ | ❌ |
+| View All Orders | ❌ | ❌ | ✅ | ❌ |
+| Create Orders | ✅ | ✅ | ✅ | ❌ |
+| Manage Users | ❌ | ❌ | ✅ | ❌ |
+
+### RBAC Implementation Examples
+
+```typescript
+// middleware/rbac.ts
+import { Request, Response, NextFunction } from 'express';
+
+interface AuthRequest extends Request {
+  user?: any;
+}
+
+// Check if user has specific role
+export const requireRole = (role: string) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({
+        error: `Access denied. ${role} role required.`
+      });
+    }
+    next();
+  };
+};
+
+// Check if user has any of the specified roles
+export const requireAnyRole = (roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: `Access denied. Required roles: ${roles.join(', ')}`
+      });
+    }
+    next();
+  };
+};
+
+// Check if user owns the resource or is admin
+export const requireOwnershipOrAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const resourceUserId = req.params.userId || req.body.userId;
+  const currentUserId = req.user._id.toString();
+  
+  if (currentUserId !== resourceUserId && req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Access denied. You can only access your own resources.'
+    });
+  }
+  next();
+};
+```
+
+### RBAC Route Examples
+
+```typescript
+// routes/admin.ts
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { requireRole, requireAnyRole } from '../middleware/rbac';
+import { getAllUsers, deleteUser, updateUserRole } from '../controllers/adminController';
+
+const router = Router();
+
+// Admin only routes
+router.get('/users', authenticate, requireRole('admin'), getAllUsers);
+router.delete('/users/:id', authenticate, requireRole('admin'), deleteUser);
+router.put('/users/:id/role', authenticate, requireRole('admin'), updateUserRole);
+
+export default router;
+```
+
+```typescript
+// routes/products.ts - Enhanced with RBAC
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { requireAnyRole, requireOwnershipOrAdmin } from '../middleware/rbac';
+import { 
+  getAllProducts, 
+  getProductById, 
+  createProduct, 
+  updateProduct, 
+  deleteProduct 
+} from '../controllers/productController';
+
+const router = Router();
+
+// Public routes
+router.get('/', getAllProducts);
+router.get('/:id', getProductById);
+
+// User and Admin can create products
+router.post('/', authenticate, requireAnyRole(['user', 'admin']), createProduct);
+
+// Only owner or admin can update
+router.put('/:id', authenticate, requireOwnershipOrAdmin, updateProduct);
+
+// Only admin can delete
+router.delete('/:id', authenticate, requireRole('admin'), deleteProduct);
+
+export default router;
+```
+
+### RBAC Controller Examples
+
+```typescript
+// controllers/adminController.ts
+import { Request, Response } from 'express';
+import { User } from '../models/User';
+
+// Get all users (Admin only)
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
+// Delete user (Admin only)
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
+// Update user role (Admin only)
+export const updateUserRole = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { role } = req.body;
+
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'User role updated successfully',
+      data: user
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+```
+
+### RBAC Testing Examples
+
+```http
+# Create admin user (register as normal user first, then update role)
+PUT http://localhost:3000/admin/users/USER_ID/role
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+```
+
+```http
+# Admin accessing all users
+GET http://localhost:3000/admin/users
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+```http
+# Regular user trying to access admin route (should fail)
+GET http://localhost:3000/admin/users
+Authorization: Bearer USER_JWT_TOKEN
+```
+
+### RBAC Best Practices
+
+- ✅ **Principle of Least Privilege** - Give minimum required permissions
+- ✅ **Role Hierarchy** - Admin > Vendor > Customer > Guest
+- ✅ **Resource Ownership** - Users can only modify their own resources
+- ✅ **Explicit Permissions** - Clearly define what each role can do
+- ✅ **Middleware Validation** - Check permissions before controller execution
+- ✅ **Consistent Error Messages** - Use standard 403 Forbidden responses
+
+### Complete 4-Role RBAC Example
+
+```typescript
+// Quick setup for 4-role system
+const roles = {
+  GUEST: 'guest',     // View products only
+  CUSTOMER: 'customer', // Place orders, manage profile
+  VENDOR: 'vendor',   // Manage own products
+  ADMIN: 'admin'      // Full system access
+};
+
+// Simple role check middleware
+export const hasRole = (allowedRoles: string[]) => {
+  return (req: any, res: any, next: any) => {
+    if (!allowedRoles.includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    next();
+  };
+};
+
+// Usage in routes
+router.get('/products', hasRole(['guest', 'customer', 'vendor', 'admin']), getProducts);
+router.post('/products', hasRole(['vendor', 'admin']), createProduct);
+router.delete('/products/:id', hasRole(['admin']), deleteProduct);
+```
+
+This completes the authentication and authorization system with a clean 4-role hierarchy suitable for e-commerce applications.le can do
+- ✅ **Audit Trail** - Log role changes and admin actions
+- ✅ **Role Validation** - Validate roles on both client and server
+
+---
+
+## 9. Routes
 
 ```typescript
 // routes/auth.ts
