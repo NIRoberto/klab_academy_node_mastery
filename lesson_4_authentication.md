@@ -286,6 +286,42 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
 export const User = mongoose.model<IUser>('User', UserSchema);
 ```
 
+### Understanding the Authentication Code
+
+**Password Hashing Middleware:**
+```typescript
+UserSchema.pre('save', async function(next) {
+  // Only hash if password is modified
+  if (!this.isModified('password')) return next();
+  
+  // Hash password with salt rounds 12
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+```
+- **pre('save')** - Runs automatically before saving user to database
+- **isModified('password')** - Only hash if password field was changed (prevents re-hashing)
+- **bcrypt.hash()** - Converts plain password to secure hash
+- **next()** - Continues with saving the user
+
+**Password Comparison Method:**
+```typescript
+UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+```
+- **methods.comparePassword** - Adds custom function to all user documents
+- **bcrypt.compare()** - Safely compares plain password with hashed password
+- **Returns boolean** - true if passwords match, false if they don't
+
+**Model Export:**
+```typescript
+export const User = mongoose.model<IUser>('User', UserSchema);
+```
+- **mongoose.model()** - Creates the User model from schema
+- **<IUser>** - TypeScript type for better code completion
+- **'User'** - Collection name in MongoDB will be 'users'
+
 ---
 
 ## 7. JWT Helper Functions
