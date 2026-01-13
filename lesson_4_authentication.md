@@ -10,7 +10,25 @@
 
 ---
 
-## 1. Authentication Fundamentals
+## 1. Environment Setup
+
+```bash
+# .env
+MONGODB_URI=mongodb://localhost:27017/ecommerce
+JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random
+PORT=3000
+NODE_ENV=development
+```
+
+### Install Dependencies
+```bash
+npm install jsonwebtoken bcryptjs
+npm install -D @types/jsonwebtoken @types/bcryptjs
+```
+
+---
+
+## 2. Authentication Fundamentals
 
 ### What is Authentication?
 
@@ -881,18 +899,6 @@ router.put('/:id', authenticate, updateProduct);
 router.delete('/:id', authenticate, authorize(['admin']), deleteProduct);
 
 export default router;
-```
-
----
-
-## 9. Environment Setup
-
-```bash
-# .env
-MONGODB_URI=mongodb://localhost:27017/ecommerce
-JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random
-PORT=3000
-NODE_ENV=development
 ```
 
 ---
