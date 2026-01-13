@@ -7,21 +7,19 @@ import productsRouter from "./routes/products";
 const app = express();
 
 app.use(morgan("dev"));
-
 app.use(express.json());
-
 app.use(logger);
-
-app.use((req, res, next) => {
-  console.log("My first middleware Function");
-  next();
-});
 
 app.get("/", (req, res) => {
   return res.send("Welcome to my app  ");
 });
+// API versioning
+const apiV1 = express.Router();
 
-app.use("/users", userRouter);
-app.use("/products", productsRouter);
+
+apiV1.use("/users", userRouter);
+apiV1.use("/products", productsRouter);
+
+app.use("/api/v1", apiV1);
 
 export default app;
