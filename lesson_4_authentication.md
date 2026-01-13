@@ -10,24 +10,6 @@
 
 ---
 
-## 1. Environment Setup
-
-```bash
-# .env
-MONGODB_URI=mongodb://localhost:27017/ecommerce
-JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random
-PORT=3000
-NODE_ENV=development
-```
-
-### Install Dependencies
-```bash
-npm install jsonwebtoken bcryptjs
-npm install -D @types/jsonwebtoken @types/bcryptjs
-```
-
----
-
 ## 2. Authentication Fundamentals
 
 ### What is Authentication?
@@ -60,7 +42,25 @@ Authorization: "You can enter VIP section" (what you're allowed to do)
 
 ---
 
-## 2. Password Security
+## 3. Environment Setup
+
+```bash
+# .env
+MONGODB_URI=mongodb://localhost:27017/ecommerce
+JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random
+PORT=3000
+NODE_ENV=development
+```
+
+### Install Dependencies
+```bash
+npm install jsonwebtoken bcryptjs
+npm install -D @types/jsonwebtoken @types/bcryptjs
+```
+
+---
+
+## 4. Password Security
 
 ### Why Hash Passwords?
 
@@ -121,7 +121,7 @@ const rounds = 15; // Slow, very secure
 
 ---
 
-## 3. JWT (JSON Web Tokens)
+## 5. JWT (JSON Web Tokens)
 
 ### What is JWT?
 
@@ -183,7 +183,7 @@ try {
 
 ---
 
-## 4. User Model with Authentication
+## 6. User Model with Authentication
 
 ### Enhanced User Schema
 ```typescript
@@ -260,7 +260,7 @@ export const User = mongoose.model<IUser>('User', UserSchema);
 
 ---
 
-## 5. JWT Helper Functions
+## 7. JWT Helper Functions
 
 ```typescript
 // utils/jwt.ts
@@ -287,7 +287,7 @@ export const verifyToken = (token: string): any => {
 
 ---
 
-## 6. Authentication Controllers
+## 8. Authentication Controllers
 
 ```typescript
 // controllers/authController.ts
