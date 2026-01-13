@@ -242,9 +242,8 @@ export const User = mongoose.model<IUser>('User', UserSchema);
 
 ---
 
-## 5. Authentication Functions
+## 5. JWT Helper Functions
 
-### JWT Helper Functions
 ```typescript
 // utils/jwt.ts
 import jwt from 'jsonwebtoken';
@@ -267,13 +266,11 @@ export const verifyToken = (token: string): any => {
   }
 };
 ```
-```
 
 ---
 
 ## 6. Authentication Controllers
 
-### Auth Controller Functions
 ```typescript
 // controllers/authController.ts
 import { Request, Response } from 'express';
@@ -300,7 +297,7 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    // Create new user (password will be hashed automatically by schema middleware)
+    // Create new user (password hashed automatically)
     const user = await User.create({
       firstName,
       lastName,
@@ -317,10 +314,7 @@ export const register = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: {
-        user: userResponse,
-        token
-      }
+      data: { user: userResponse, token }
     });
 
   } catch (error: any) {
@@ -346,14 +340,13 @@ export const login = async (req: Request, res: Response) => {
     // Find user and include password field
     const user = await User.findOne({ email }).select('+password');
     
-    // Check if user exists
     if (!user) {
       return res.status(401).json({
         error: 'Invalid email or password'
       });
     }
 
-    // Check password using schema method
+    // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -377,10 +370,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: {
-        user: userResponse,
-        token
-      }
+      data: { user: userResponse, token }
     });
 
   } catch (error: any) {
@@ -391,14 +381,12 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// GET /auth/me (Get current user)
+// GET /auth/me
 export const getMe = async (req: any, res: Response) => {
   try {
-    const user = req.user;
-
     res.status(200).json({
       success: true,
-      data: user
+      data: req.user
     });
   } catch (error: any) {
     res.status(500).json({
@@ -407,21 +395,18 @@ export const getMe = async (req: any, res: Response) => {
     });
   }
 };
-```
 ```
 
 ---
 
 ## 7. Authentication Middleware
 
-### Auth Middleware Functions
 ```typescript
 // middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import { User } from '../models/User';
 
-// Extend Request interface to include user
 interface AuthRequest extends Request {
   user?: any;
 }
@@ -429,7 +414,6 @@ interface AuthRequest extends Request {
 // Authentication middleware
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Get token from Authorization header
     const authHeader = req.header('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -438,13 +422,9 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       });
     }
 
-    // Extract token (remove 'Bearer ' prefix)
     const token = authHeader.substring(7);
-
-    // Verify token
     const decoded = verifyToken(token);
     
-    // Get user from database
     const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(401).json({
@@ -452,10 +432,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       });
     }
 
-    // Attach user to request object
     req.user = user;
-    
-    // Continue to next middleware
     next();
 
   } catch (error: any) {
@@ -465,7 +442,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   }
 };
 
-// Authorization middleware (role-based)
+// Authorization middleware
 export const authorize = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
@@ -476,43 +453,11 @@ export const authorize = (roles: string[]) => {
     next();
   };
 };
-``` = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user has required role
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: 'Access denied. Insufficient permissions.'
-      });
-    }
-    
-    next();
-  };
-};
-
-// Optional authentication (doesn't fail if no token)
-export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.header('Authorization');
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const user = await AuthService.getUserByToken(token);
-      req.user = user;
-    }
-    
-    next();
-  } catch (error) {
-    // Continue without user if token is invalid
-    next();
-  }
-};
 ```
-
 ---
 
-## 8. Protected Routes
+## 8. Routes
 
-### Auth Routes
 ```typescript
 // routes/auth.ts
 import { Router } from 'express';
@@ -531,7 +476,6 @@ router.get('/me', authenticate, getMe);
 export default router;
 ```
 
-### Protected Product Routes
 ```typescript
 // routes/products.ts
 import { Router } from 'express';
@@ -550,7 +494,7 @@ const router = Router();
 router.get('/', getAllProducts);
 router.get('/:id', getProductById);
 
-// Protected routes (login required)
+// Protected routes
 router.post('/', authenticate, createProduct);
 router.put('/:id', authenticate, updateProduct);
 
@@ -562,70 +506,21 @@ export default router;
 
 ---
 
-## 9. Environment Variables
+## 9. Environment Setup
 
-### Authentication Environment Setup
 ```bash
 # .env
-# Database
 MONGODB_URI=mongodb://localhost:27017/ecommerce
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random-at-least-32-characters
-JWT_EXPIRES_IN=7d
-
-# Bcrypt Configuration
-BCRYPT_ROUNDS=12
-
-# Server
+JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random
 PORT=3000
 NODE_ENV=development
 ```
 
-### Environment Validation
-```typescript
-// config/env.ts
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Validate required environment variables
-const requiredEnvVars = [
-  'MONGODB_URI',
-  'JWT_SECRET',
-  'PORT'
-];
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`);
-    process.exit(1);
-  }
-}
-
-// Validate JWT_SECRET length
-if (process.env.JWT_SECRET!.length < 32) {
-  console.error('JWT_SECRET must be at least 32 characters long');
-  process.exit(1);
-}
-
-export const config = {
-  mongodbUri: process.env.MONGODB_URI!,
-  jwtSecret: process.env.JWT_SECRET!,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS!) || 12,
-  port: parseInt(process.env.PORT!) || 3000,
-  nodeEnv: process.env.NODE_ENV || 'development'
-};
-```
-
 ---
 
-## 10. Testing Authentication
+## 10. Testing with Postman
 
-### Using Postman/Thunder Client
-
-**1. Register User:**
+### Register User
 ```http
 POST http://localhost:3000/auth/register
 Content-Type: application/json
@@ -638,7 +533,7 @@ Content-Type: application/json
 }
 ```
 
-**2. Login User:**
+### Login User
 ```http
 POST http://localhost:3000/auth/login
 Content-Type: application/json
@@ -649,43 +544,24 @@ Content-Type: application/json
 }
 ```
 
-**3. Access Protected Route:**
+### Access Protected Route
 ```http
 GET http://localhost:3000/auth/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**4. Create Product (Protected):**
-```http
-POST http://localhost:3000/products
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-Content-Type: application/json
-
-{
-  "name": "Laptop",
-  "price": 999,
-  "category": "electronics"
-}
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
 ```
 
 ---
 
 ## 11. Security Best Practices
 
-### Password Security
-- **Minimum length** - At least 8 characters
-- **Complexity** - Mix of letters, numbers, symbols
-- **Salt rounds** - Use 12+ for bcrypt
-- **Never log passwords** - Even in development
-
-### JWT Security
-- **Strong secret** - At least 32 random characters
-- **Short expiration** - 15 minutes to 7 days max
-- **Secure storage** - HttpOnly cookies or secure localStorage
-- **Token rotation** - Refresh tokens for long sessions
-
-### API Security
-- **HTTPS only** - Never send tokens over HTTP
+- ✅ **Hash passwords** with bcrypt (salt rounds 12+)
+- ✅ **Strong JWT secret** (32+ characters)
+- ✅ **Token expiration** (7 days max)
+- ✅ **HTTPS only** in production
+- ✅ **Input validation** on all endpoints
+- ✅ **Rate limiting** to prevent brute force
+- ✅ **Environment variables** for secrets
+- ✅ **Error handling** without leaking infos over HTTP
 - **Rate limiting** - Prevent brute force attacks
 - **Input validation** - Validate all user inputs
 - **Error handling** - Don't leak sensitive information
