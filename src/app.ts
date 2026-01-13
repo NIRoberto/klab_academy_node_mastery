@@ -2,6 +2,7 @@ import express from "express";
 import morgan from "morgan";
 import logger from "./middlewares/logger";
 import userRouter from "./routes/users";
+import productsRouter from "./routes/products";
 
 const app = express();
 
@@ -21,7 +22,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/users", userRouter);
-
-// app.use("/products", productsRouter);
+app.use("/products", productsRouter);
 
 export default app;
