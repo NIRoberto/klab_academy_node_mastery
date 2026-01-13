@@ -140,37 +140,15 @@ const rounds = 15; // 2^15 = 32,768 iterations (high security)
 
 When you log in successfully, the server gives you this special code. You then show this code every time you want to access something that requires login.
 
-### Why Use JWT? (Simple Reasons)
+### Why Use JWT?
 
-**1. No Memory Problems**
-- Your server doesn't need to remember who's logged in
-- Like giving someone a ticket instead of keeping a guest list
-- Your app runs faster and uses less memory
+**1. No Server Memory Needed** - Your server doesn't need to store login sessions, making it faster and more efficient.
 
-**2. Works Everywhere**
-- Same login works on your website, mobile app, and API
-- Like having one key that opens multiple doors
-- Perfect for modern apps that have many parts
+**2. Works Across All Platforms** - Same token works on websites, mobile apps, and APIs without any changes.
 
-**3. Great for Mobile Apps**
-- Lightweight and fast for phones and tablets
-- Works even when internet is slow or offline
-- Users stay logged in without constant server checks
+**3. Built-in Security** - Tokens automatically expire and can't be tampered with, keeping your app secure.
 
-**4. Built-in Security**
-- Tokens automatically expire (like parking tickets)
-- Can't be faked or tampered with
-- Contains user info safely encrypted
-
-**5. Faster User Experience**
-- No need to check database every time
-- Users get instant access to their stuff
-- Less waiting, happier users
-
-**6. Industry Standard**
-- Used by Google, Facebook, Netflix, and most modern apps
-- Easy to find help and tutorials online
-- Future-proof technology choice
+**4. Better Performance** - No database lookups needed to check if user is logged in, making everything faster.
 
 ### JWT vs Old-School Sessions
 
