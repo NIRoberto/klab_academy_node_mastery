@@ -158,7 +158,148 @@ export default app;
 
 ---
 
-## 6. Document Authentication Endpoints
+## 6. Swagger Syntax Guide
+
+Before diving into examples, let's understand the basic Swagger annotation syntax:
+
+### Basic Structure
+
+```typescript
+/**
+ * @swagger
+ * /path/to/endpoint:
+ *   httpMethod:
+ *     summary: Brief description
+ *     tags: [Category]
+ *     responses:
+ *       200:
+ *         description: Success message
+ */
+```
+
+### Common Swagger Keywords
+
+**Path & Method:**
+```typescript
+/api/v1/products:     // API endpoint path
+  get:                // HTTP method (get, post, put, delete)
+  post:
+  put:
+  delete:
+```
+
+**Metadata:**
+```typescript
+summary: "Short description"        // Brief endpoint description
+tags: [Products]                    // Group endpoints by category
+description: "Detailed explanation" // Long description (optional)
+```
+
+**Request Body:**
+```typescript
+requestBody:
+  required: true                    // Is body required?
+  content:
+    application/json:               // Content type
+      schema:                       // Data structure
+        type: object                // Data type
+        required:                   // Required fields
+          - fieldName
+        properties:                 // Field definitions
+          fieldName:
+            type: string            // Field type
+            example: "value"        // Example value
+```
+
+**Parameters:**
+```typescript
+parameters:
+  - in: path                        // Location: path, query, header
+    name: id                        // Parameter name
+    required: true                  // Is it required?
+    schema:
+      type: string                  // Data type
+    description: "Parameter info"   // Description
+```
+
+**Responses:**
+```typescript
+responses:
+  200:                              // HTTP status code
+    description: "Success"          // Response description
+    content:
+      application/json:             // Response type
+        schema:                     // Response structure
+          type: object
+          properties:
+            status:
+              type: string
+```
+
+**Security:**
+```typescript
+security:
+  - bearerAuth: []                  // Requires JWT authentication
+```
+
+### Data Types
+
+```typescript
+type: string      // Text: "hello"
+type: number      // Numbers: 123, 45.67
+type: integer     // Whole numbers: 1, 2, 3
+type: boolean     // true or false
+type: array       // List: [1, 2, 3]
+type: object      // Object: { key: "value" }
+```
+
+### Common Formats
+
+```typescript
+format: email     // Email address
+format: password  // Password field (hidden)
+format: date      // Date: 2024-01-01
+format: date-time // DateTime: 2024-01-01T10:30:00Z
+format: uri       // URL
+```
+
+### Quick Reference
+
+```typescript
+/**
+ * @swagger
+ * /api/v1/endpoint:              ← Endpoint path
+ *   post:                         ← HTTP method
+ *     summary: Description        ← Short description
+ *     tags: [Category]            ← Group by category
+ *     security:                   ← Authentication
+ *       - bearerAuth: []
+ *     parameters:                 ← URL/Query params
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:                ← Request data
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               field:
+ *                 type: string
+ *     responses:                  ← Response codes
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad Request
+ */
+```
+
+---
+
+## 7. Document Authentication Endpoints
 
 ### Register Endpoint Documentation
 
@@ -332,7 +473,7 @@ export const profile = (req: AuthRequest, res: Response) => {
 
 ---
 
-## 7. Document Product Endpoints
+## 8. Document Product Endpoints
 
 ### Get All Products
 
@@ -493,7 +634,7 @@ export const profile = (req: AuthRequest, res: Response) => {
 
 ---
 
-## 8. Reusable Swagger Components
+## 9. Reusable Swagger Components
 
 ### Define Reusable Schemas
 
@@ -570,7 +711,7 @@ export const profile = (req: AuthRequest, res: Response) => {
 
 ---
 
-## 9. Testing with Swagger UI
+## 10. Testing with Swagger UI
 
 ### Access Swagger Documentation
 
@@ -605,7 +746,7 @@ http://localhost:3000/api-docs
 
 ---
 
-## 10. Best Practices
+## 11. Best Practices
 
 ### Documentation Guidelines
 
@@ -636,7 +777,7 @@ security:
 
 ---
 
-## 11. Advanced Features
+## 12. Advanced Features
 
 ### Custom Swagger UI Theme
 
@@ -663,7 +804,7 @@ app.use('/api-docs/v2', swaggerUi.serve, swaggerUi.setup(swaggerSpecV2));
 
 ---
 
-## 12. Complete Example
+## 13. Complete Example
 
 ### Full Controller with Documentation
 
