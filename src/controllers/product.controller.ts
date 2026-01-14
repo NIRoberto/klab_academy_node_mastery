@@ -1,7 +1,16 @@
 import { Request, Response } from "express";
 import { Product } from "../models/product.model";
 
-// GET /products - Get all products
+/**
+ * @swagger
+ * /api/v1/products:
+ *   get:
+ *     summary: Get all products
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: List of all products
+ */
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const products = await Product.find();
@@ -15,7 +24,25 @@ export const getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-// GET /products/:id - Get single product
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   get:
+ *     summary: Get product by ID
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: Product found
+ *       404:
+ *         description: Product not found
+ */
 export const getProductById = async (req: Request, res: Response) => {
   const id = req.params.id;
 
@@ -38,7 +65,47 @@ export const getProductById = async (req: Request, res: Response) => {
   }
 };
 
-// POST /products - Create new product
+/**
+ * @swagger
+ * /api/v1/products:
+ *   post:
+ *     summary: Create a new product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - price
+ *               - category
+ *               - quantity
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Laptop
+ *               price:
+ *                 type: number
+ *                 example: 999.99
+ *               description:
+ *                 type: string
+ *                 example: High-performance laptop
+ *               category:
+ *                 type: string
+ *                 example: Electronics
+ *               quantity:
+ *                 type: number
+ *                 example: 10
+ *     responses:
+ *       201:
+ *         description: Product created successfully
+ *       401:
+ *         description: Unauthorized
+ */
 export const createProduct = async (req: Request, res: Response) => {
   try {
     /*
@@ -72,7 +139,46 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /products/:id - Update product
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   put:
+ *     summary: Update a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               quantity:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *       404:
+ *         description: Product not found
+ *       401:
+ *         description: Unauthorized
+ */
 export const updateProduct = (req: Request, res: Response) => {
   // const id = parseInt(req.params.id || "");
   // const productIndex = products.findIndex((p) => p.id === id);
@@ -91,7 +197,29 @@ export const updateProduct = (req: Request, res: Response) => {
   });
 };
 
-// DELETE /products/:id - Delete product
+/**
+ * @swagger
+ * /api/v1/products/{id}:
+ *   delete:
+ *     summary: Delete a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *       404:
+ *         description: Product not found
+ *       401:
+ *         description: Unauthorized
+ */
 export const deleteProduct = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {

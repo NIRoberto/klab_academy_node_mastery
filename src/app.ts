@@ -1,5 +1,7 @@
 import express from "express";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.config";
 import logger from "./middlewares/logger";
 import userRouter from "./routes/users";
 import productsRouter from "./routes/products";
@@ -14,6 +16,17 @@ app.use(logger);
 app.get("/", (req, res) => {
   return res.send("Welcome to my app  ");
 });
+
+// Swagger Documentation Route
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "Product API Docs",
+  })
+);
+
 // API versioning
 const apiV1 = express.Router();
 
