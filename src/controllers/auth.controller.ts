@@ -1,147 +1,256 @@
 import bcrypt from "bcryptjs";
-
 import express, { Request, Response } from "express";
 import { User } from "../models/user.model";
 import { signToken } from "../utils/jwt.helper";
 import { AuthRequest } from "../middlewares/authenticate";
 
+// Constants for better maintainability
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || "12"); // Higher security than default 10
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  CONFLICT: 409,
+  INTERNAL_ERROR: 500,
+} as const;
+
+// Reusable validation function
+const validateRequiredFields = (
+  fields: Record<string, any>,
+  requiredFields: string[]
+) => {
+  const missingFields = requiredFields.filter((field) => !fields[field]);
+  return {
+    isValid: missingFields.length === 0,
+    missingFields,
+  };
+};
+
+// Reusable error response function
+const sendErrorResponse = (
+  res: Response,
+  status: number,
+  message: string,
+  error?: any
+) => {
+  return res.status(status).json({
+    status: "fail",
+    message,
+    ...(error && { error }),
+  });
+};
+
+// Reusable success response function
+const sendSuccessResponse = (
+  res: Response,
+  status: number,
+  message: string,
+  data?: any
+) => {
+  return res.status(status).json({
+    status: "success",
+    message,
+    ...data,
+  });
+};
+
+/**
+ * Register a new user
+ * @param req - Express request object containing user registration data
+ * @param res - Express response object
+ * @returns JSON response with user data and JWT token
+ */
 const register = async (req: Request, res: Response) => {
   try {
-    //  validation user information  (  firstName, lastName , email, password )
-
+    // Extract user registration data from request body
     const { firstName, lastName, email, password } = req.body;
 
-    if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({
-        status: "fail",
-        message: "All fields are required",
-      });
+    // Validate all required fields are provided
+    const validation = validateRequiredFields(
+      { firstName, lastName, email, password },
+      ["firstName", "lastName", "email", "password"]
+    );
+
+    if (!validation.isValid) {
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        `Missing required fields: ${validation.missingFields.join(", ")}`
+      );
     }
-    //  we can check if the user  exist or not
-    const user = await User.findOne({
-      email,
-    });
 
-    if (user) {
-      return res.status(409).json({
-        status: "fail",
-        message: "User already exist",
-      });
+    // Check if user already exists in database
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        "User with this email already exists"
+      );
     }
-    //  register a user after that ,  we ill not store password   hash the password
 
-    const hashPassword = await bcrypt.hash(password, 10);
+    // Hash password for secure storage (never store plain text passwords)
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // generate token for the user
-
+    // Create new user in database with hashed password
     const newUser = await User.create({
       firstName,
       lastName,
       email,
-      password: hashPassword,
+      password: hashedPassword,
     });
 
+    // Generate JWT token for immediate login after registration
     const token = await signToken({
       id: newUser.id,
       email: newUser.email,
     });
 
-    return res.status(201).json({
-      status: "success",
-      message: "User Created",
-      user: newUser,
-      token,
-    });
-  } catch (error) {
-    console.log(error);
+    // Remove password from response for security
+    const { password: _, ...userResponse } = newUser.toObject();
 
-    return res.status(400).json({
-      status: "success",
-      message: "User register failed ",
-      error,
-    });
+    // Send success response with user data and token
+    return sendSuccessResponse(
+      res,
+      HTTP_STATUS.CREATED,
+      "User registered successfully",
+      {
+        user: userResponse,
+        token,
+      }
+    );
+  } catch (error) {
+    console.error("Registration error:", error);
+    return sendErrorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_ERROR,
+      "Registration failed. Please try again.",
+      process.env.NODE_ENV === "development" ? error : undefined
+    );
   }
 };
 
-const login = async (
-  req: Request,
-  res: Response,
-  next: express.NextFunction
-) => {
+/**
+ * Authenticate user login
+ * @param req - Express request object containing login credentials
+ * @param res - Express response object
+ * @returns JSON response with JWT token on successful login
+ */
+const login = async (req: Request, res: Response) => {
   try {
-    // validate user information
-
+    // Extract login credentials from request body
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        status: "fail",
-        message: "All fields are required",
-      });
+    // Validate required login fields
+    const validation = validateRequiredFields({ email, password }, [
+      "email",
+      "password",
+    ]);
+
+    if (!validation.isValid) {
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Email and password are required"
+      );
     }
 
-    //   credentials are valid or not
-
-    const user = await User.findOne({
-      email,
-    });
+    // Find user by email (include password field for comparison)
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Invalid credentials",
-      });
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.UNAUTHORIZED,
+        "Invalid email or password"
+      );
     }
 
-    // verify the password
-
+    // Verify password against stored hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Invalid credentials",
-      });
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.UNAUTHORIZED,
+        "Invalid email or password"
+      );
     }
 
-    // give user login success
-
+    // Generate JWT token for authenticated session
     const token = await signToken({
       id: user.id,
       email: user.email,
     });
 
-    return res.status(200).json({
-      status: "success",
-      message: " Login success ",
+    // Send success response with token
+    return sendSuccessResponse(res, HTTP_STATUS.OK, "Login successful", {
       token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
     });
   } catch (error) {
-    return res.status(400).json({
-      status: "fail",
-      message: "login failed ",
-      error,
-    });
+    console.error("Login error:", error);
+    return sendErrorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_ERROR,
+      "Login failed. Please try again.",
+      process.env.NODE_ENV === "development" ? error : undefined
+    );
   }
 };
 
-const profile = (
-  req: AuthRequest,
-  res: Response,
-  next: express.NextFunction
-) => {
+/**
+ * Get current user profile (protected route)
+ * @param req - Express request object with authenticated user
+ * @param res - Express response object
+ * @returns JSON response with user profile data
+ */
+const profile = (req: AuthRequest, res: Response) => {
   try {
-    return res.status(201).json({
-      status: "success",
-      message: "User info",
-      user: req.user,
-    });
+    // User is already attached to request by authentication middleware
+    if (!req.user) {
+      return sendErrorResponse(
+        res,
+        HTTP_STATUS.UNAUTHORIZED,
+        "User not found in request. Authentication required."
+      );
+    }
+
+    // Remove sensitive information before sending response
+    const userProfile = {
+      id: req.user.id,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      email: req.user.email,
+      role: req.user.role,
+      createdAt: req.user.createdAt,
+      updatedAt: req.user.updatedAt,
+    };
+
+    // Send user profile data
+    return sendSuccessResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Profile retrieved successfully",
+      {
+        user: userProfile,
+      }
+    );
   } catch (error) {
-    return res.status(400).json({
-      status: "fail ",
-      message: "User  info ",
-      error,
-    });
+    console.error("Profile retrieval error:", error);
+    return sendErrorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_ERROR,
+      "Failed to retrieve profile. Please try again.",
+      process.env.NODE_ENV === "development" ? error : undefined
+    );
   }
 };
 
