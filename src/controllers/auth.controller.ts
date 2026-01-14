@@ -56,10 +56,45 @@ const sendSuccessResponse = (
 };
 
 /**
- * Register a new user
- * @param req - Express request object containing user registration data
- * @param res - Express response object
- * @returns JSON response with user data and JWT token
+ * @swagger
+ * /api/v1/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - email
+ *               - password
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: password123
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Missing required fields
+ *       409:
+ *         description: User already exists
  */
 const register = async (req: Request, res: Response) => {
   try {
@@ -133,10 +168,36 @@ const register = async (req: Request, res: Response) => {
 };
 
 /**
- * Authenticate user login
- * @param req - Express request object containing login credentials
- * @param res - Express response object
- * @returns JSON response with JWT token on successful login
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: Email and password are required
+ *       401:
+ *         description: Invalid credentials
  */
 const login = async (req: Request, res: Response) => {
   try {
@@ -207,10 +268,18 @@ const login = async (req: Request, res: Response) => {
 };
 
 /**
- * Get current user profile (protected route)
- * @param req - Express request object with authenticated user
- * @param res - Express response object
- * @returns JSON response with user profile data
+ * @swagger
+ * /api/v1/auth/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile retrieved successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
  */
 const profile = (req: AuthRequest, res: Response) => {
   try {
