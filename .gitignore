@@ -6,7 +6,8 @@ node_modules/
 .env.local
 .env.production
 
-# Build output
+# Build output (keep dist/ for local, Render will build it)
+# dist/ is built on Render, so we ignore it locally
 dist/
 build/
 
