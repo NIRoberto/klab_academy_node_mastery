@@ -4,8 +4,10 @@
   "description": "1. [Web Development Fundamentals](#web-development-fundamentals) 2. [Node.js Fundamentals](#nodejs-fundamentals) 3. [NPM and Package Management](#npm-and-package-management) 4. [Express.js Fundamentals](#expressjs-fundamentals) 5. [Express.js Setup](#expressjs-setup) 6. [Middleware](#middleware) 7. [Routing](#routing) 8. [CRUD Operations](#crud-operations) 9. [Error Handling](#error-handling) 10. [Testing](#testing) 11. [Deployment](#deployment)",
   "main": "index.js",
   "scripts": {
-    "dev": " nodemon --exec ts-node src/server.ts",
-    "start": "ts-node src/server.ts",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:dev": "ts-node src/server.ts",
     "test": ""
   },
   "keywords": [],
