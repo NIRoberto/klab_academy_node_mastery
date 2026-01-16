@@ -452,86 +452,109 @@ curl -X POST http://localhost:8080/api/v1/orders \
 }
 ```
 
-# If product doesn't exist or insufficient stock:
-# - No order created
-# - Stock NOT reduced
-# - Database stays consistent!
-```
+**Note:** If product doesn't exist or insufficient stock, no order is created and stock is NOT reduced - database stays consistent!
 
 ---
 
 ### 3. Aggregation Pipelines
 
 **What is Aggregation?**
-Aggregation operations process data records and return computed results.
 
-**Why you need this:**
-- Get statistics and analytics from your data
-- Calculate totals, averages, min/max values
-- Group data by categories
-- More powerful than simple queries
+Aggregation is MongoDB's way of processing and analyzing data to get meaningful insights. Think of it as running reports on your data.
 
-**Think of it like:**
-Excel pivot tables - group data, calculate sums, averages, etc.
+**Simple Explanation:**
+- **Regular Query**: "Give me all products" → Returns raw data
+- **Aggregation**: "Give me average price per category" → Returns calculated insights
 
-**Real-world examples:**
-- "How many products in each category?"
-- "What's the average price per category?"
-- "Which category has the most expensive product?"
-- "Total inventory value per category?"
+**Why You Need This:**
 
-**Aggregation Pipeline Stages:**
+1. **Business Analytics** - Get sales reports, inventory summaries
+2. **Dashboard Data** - Calculate statistics for admin dashboards
+3. **Performance** - MongoDB does calculations, not your app
+4. **Complex Queries** - Group, filter, sort, calculate in one query
+
+**Real-World Use Cases:**
+- E-commerce: "Total sales per category this month"
+- Social Media: "Most active users this week"
+- Inventory: "Products running low on stock"
+- Analytics: "Average order value by customer"
+
+**How It Works:**
+
+Aggregation uses a "pipeline" - data flows through stages, each stage transforms the data:
 
 ```
-All Products (1000 items)
+Raw Data (1000 products)
     ↓
-$match (filter) ──→ Only in-stock products (800 items)
+[Stage 1: Filter] → Only in-stock (800 products)
     ↓
-$group (group by category) ──→ Electronics: 200, Clothing: 300, Books: 300
+[Stage 2: Group] → Group by category (3 groups)
     ↓
-$sort (order results) ──→ Clothing (300), Books (300), Electronics (200)
+[Stage 3: Calculate] → Count, average, min, max
     ↓
-$project (format output) ──→ Clean, formatted results
+[Stage 4: Sort] → Order by count
     ↓
-Final Result
+[Stage 5: Format] → Clean output
+    ↓
+Final Result (3 category summaries)
 ```
 
-#### Example: Product Statistics
+**Common Aggregation Stages:**
+
+| Stage | Purpose | Example |
+|-------|---------|----------|
+| `$match` | Filter documents | Only in-stock products |
+| `$group` | Group by field | Group by category |
+| `$sort` | Order results | Sort by price |
+| `$project` | Select/format fields | Show only name, price |
+| `$limit` | Limit results | Top 10 products |
+| `$skip` | Skip documents | Pagination |
+| `$lookup` | Join collections | Get user details |
+| `$unwind` | Flatten arrays | Separate array items |
+
+---
+
+#### Example 1: Product Statistics by Category
+
+**Goal:** Get total products, average price, min/max price for each category
 
 ```typescript
 // src/controllers/product.controller.ts
 export const getProductStats = async (req: Request, res: Response) => {
   try {
     const stats = await Product.aggregate([
-      // Stage 1: Match only in-stock products
+      // Stage 1: Filter - Only in-stock products
       {
         $match: { inStock: true }
       },
-      // Stage 2: Group by category
+      
+      // Stage 2: Group - By category and calculate
       {
         $group: {
-          _id: '$category',
-          totalProducts: { $sum: 1 },
-          avgPrice: { $avg: '$price' },
-          minPrice: { $min: '$price' },
-          maxPrice: { $max: '$price' },
-          totalQuantity: { $sum: '$quantity' }
+          _id: '$category',                    // Group by this field
+          totalProducts: { $sum: 1 },          // Count documents
+          avgPrice: { $avg: '$price' },        // Average price
+          minPrice: { $min: '$price' },        // Lowest price
+          maxPrice: { $max: '$price' },        // Highest price
+          totalQuantity: { $sum: '$quantity' } // Sum all quantities
         }
       },
-      // Stage 3: Sort by total products
+      
+      // Stage 3: Sort - By total products (descending)
       {
         $sort: { totalProducts: -1 }
       },
-      // Stage 4: Add computed fields
+      
+      // Stage 4: Format - Clean output
       {
         $project: {
-          category: '$_id',
-          totalProducts: 1,
-          avgPrice: { $round: ['$avgPrice', 2] },
+          category: '$_id',                        // Rename _id to category
+          totalProducts: 1,                        // Include field
+          avgPrice: { $round: ['$avgPrice', 2] },  // Round to 2 decimals
           minPrice: 1,
           maxPrice: 1,
           totalQuantity: 1,
-          _id: 0
+          _id: 0                                   // Exclude _id
         }
       }
     ]);
@@ -549,80 +572,360 @@ export const getProductStats = async (req: Request, res: Response) => {
 };
 ```
 
-**Understanding the Aggregation Stages:**
-
-**Stage 1 - $match (Filter):**
-```typescript
-{ $match: { inStock: true } }
-// Like: SELECT * FROM products WHERE inStock = true
-// Filters out out-of-stock products
-```
-
-**Stage 2 - $group (Group & Calculate):**
-```typescript
-{
-  $group: {
-    _id: '$category',              // Group by category
-    totalProducts: { $sum: 1 },    // Count products
-    avgPrice: { $avg: '$price' },  // Average price
-    minPrice: { $min: '$price' },  // Cheapest product
-    maxPrice: { $max: '$price' }   // Most expensive product
-  }
-}
-// Like: SELECT category, COUNT(*), AVG(price) FROM products GROUP BY category
-```
-
-**Stage 3 - $sort (Order Results):**
-```typescript
-{ $sort: { totalProducts: -1 } }
-// -1 = descending (most products first)
-// 1 = ascending (least products first)
-```
-
-**Stage 4 - $project (Format Output):**
-```typescript
-{
-  $project: {
-    category: '$_id',                    // Rename _id to category
-    totalProducts: 1,                    // Include field
-    avgPrice: { $round: ['$avgPrice', 2] }, // Round to 2 decimals
-    _id: 0                               // Exclude _id
-  }
-}
-```
-
-**Example Output:**
-```json
-[
-  {
-    "category": "Electronics",
-    "totalProducts": 150,
-    "avgPrice": 299.99,
-    "minPrice": 19.99,
-    "maxPrice": 1299.99,
-    "totalQuantity": 500
-  },
-  {
-    "category": "Clothing",
-    "totalProducts": 200,
-    "avgPrice": 49.99,
-    "minPrice": 9.99,
-    "maxPrice": 199.99,
-    "totalQuantity": 1000
-  }
-]
-```
-
-**Test the Aggregation:**
+**Test:**
 ```bash
 curl http://localhost:8080/api/v1/products/stats
 ```
 
+**Output:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "category": "Electronics",
+      "totalProducts": 150,
+      "avgPrice": 299.99,
+      "minPrice": 19.99,
+      "maxPrice": 1299.99,
+      "totalQuantity": 500
+    },
+    {
+      "category": "Clothing",
+      "totalProducts": 200,
+      "avgPrice": 49.99,
+      "minPrice": 9.99,
+      "maxPrice": 199.99,
+      "totalQuantity": 1000
+    },
+    {
+      "category": "Books",
+      "totalProducts": 100,
+      "avgPrice": 24.99,
+      "minPrice": 9.99,
+      "maxPrice": 59.99,
+      "totalQuantity": 300
+    }
+  ]
+}
+```
+
+---
+
+#### Example 2: Top 10 Most Expensive Products
+
+**Goal:** Get the 10 most expensive in-stock products
+
+```typescript
 export const getTopProducts = async (req: Request, res: Response) => {
   try {
     const topProducts = await Product.aggregate([
+      // Stage 1: Filter - Only in-stock
       {
         $match: { inStock: true }
+      },
+      
+      // Stage 2: Sort - By price (highest first)
+      {
+        $sort: { price: -1 }
+      },
+      
+      // Stage 3: Limit - Top 10 only
+      {
+        $limit: 10
+      },
+      
+      // Stage 4: Format - Select fields
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          category: 1,
+          quantity: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: topProducts.length,
+      data: topProducts
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+```
+
+**Test:**
+```bash
+curl http://localhost:8080/api/v1/products/top
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "count": 10,
+  "data": [
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "name": "MacBook Pro 16\"",
+      "price": 2499.99,
+      "category": "Electronics",
+      "quantity": 15
+    },
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+      "name": "iPhone 15 Pro Max",
+      "price": 1999.99,
+      "category": "Electronics",
+      "quantity": 30
+    }
+  ]
+}
+``` Sort - By price (highest first)
+      {
+        $sort: { price: -1 }
+      },
+      
+      // Stage 3: Limit - Top 10 only
+      {
+        $limit: 10
+      },
+      
+      // Stage 4: Format - Select fields
+      {
+        $project: {
+          name: 1,
+          price: 1,
+          category: 1,
+          quantity: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: topProducts.length,
+      data: topProducts
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+```
+
+**Test:**
+```bash
+curl http://localhost:8080/api/v1/products/top
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "count": 10,
+  "data": [
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "name": "MacBook Pro 16\"",
+      "price": 2499.99,
+      "category": "Electronics",
+      "quantity": 15
+    },
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+      "name": "iPhone 15 Pro Max",
+      "price": 1999.99,
+      "category": "Electronics",
+      "quantity": 30
+    },
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d2",
+      "name": "Gaming Laptop",
+      "price": 1799.99,
+      "category": "Electronics",
+      "quantity": 20
+    }
+  ]
+}
+```
+
+---
+
+#### Example 3: Low Stock Alert
+
+**Goal:** Find products with quantity less than 10
+
+```typescript
+export const getLowStockProducts = async (req: Request, res: Response) => {
+  try {
+    const lowStock = await Product.aggregate([
+      // Stage 1: Filter - Low quantity
+      {
+        $match: {
+          quantity: { $lt: 10 },
+          inStock: true
+        }
+      },
+      
+      // Stage 2: Sort - Lowest quantity first
+      {
+        $sort: { quantity: 1 }
+      },
+      
+      // Stage 3: Format
+      {
+        $project: {
+          name: 1,
+          category: 1,
+          quantity: 1,
+          price: 1,
+          alert: {
+            $concat: ['Only ', { $toString: '$quantity' }, ' left!']
+          }
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: lowStock.length,
+      data: lowStock
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "data": [
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "name": "Wireless Keyboard",
+      "category": "Accessories",
+      "quantity": 3,
+      "price": 49.99,
+      "alert": "Only 3 left!"
+    },
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+      "name": "USB-C Hub",
+      "category": "Accessories",
+      "quantity": 5,
+      "price": 39.99,
+      "alert": "Only 5 left!"
+    }
+  ]
+}
+```
+
+---
+
+#### Example 4: Price Range Distribution
+
+**Goal:** Count products in different price ranges
+
+```typescript
+export const getPriceDistribution = async (req: Request, res: Response) => {
+  try {
+    const distribution = await Product.aggregate([
+      {
+        $bucket: {
+          groupBy: '$price',
+          boundaries: [0, 50, 100, 500, 1000, 5000],
+          default: '5000+',
+          output: {
+            count: { $sum: 1 },
+            products: { $push: '$name' }
+          }
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: distribution
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+```
+
+**Output:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": 0,
+      "count": 50,
+      "products": ["USB Cable", "Mouse Pad", "..."]
+    },
+    {
+      "_id": 50,
+      "count": 100,
+      "products": ["Wireless Mouse", "Keyboard", "..."]
+    },
+    {
+      "_id": 100,
+      "count": 75,
+      "products": ["Headphones", "Webcam", "..."]
+    }
+  ]
+}
+```
+
+---
+
+**Aggregation Operators Quick Reference:**
+
+**Arithmetic:**
+- `$sum` - Add values
+- `$avg` - Calculate average
+- `$min` - Find minimum
+- `$max` - Find maximum
+- `$multiply` - Multiply values
+- `$divide` - Divide values
+
+**String:**
+- `$concat` - Join strings
+- `$toUpper` - Uppercase
+- `$toLower` - Lowercase
+- `$substr` - Substring
+
+**Comparison:**
+- `$eq` - Equal
+- `$gt` - Greater than
+- `$lt` - Less than
+- `$gte` - Greater than or equal
+- `$lte` - Less than or equal
+
+**Logical:**
+- `$and` - All conditions true
+- `$or` - Any condition true
+- `$not` - Negate condition
+
+ true }
       },
       {
         $sort: { price: -1 }
@@ -1130,12 +1433,41 @@ export const getFilteredProducts = async (req: Request, res: Response) => {
 ```
 
 **Example API Calls:**
-```
+```bash
 GET /api/v1/products?page=1&limit=10
 GET /api/v1/products?category=Electronics&inStock=true
 GET /api/v1/products?minPrice=100&maxPrice=500
 GET /api/v1/products?sortBy=price&sortOrder=asc
 GET /api/v1/products?category=Electronics&sortBy=price&sortOrder=desc&page=2
+```
+
+**Sample Output:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "name": "Wireless Mouse",
+      "price": 29.99,
+      "category": "Electronics",
+      "inStock": true,
+      "quantity": 50
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalItems": 50,
+    "itemsPerPage": 10,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  },
+  "filters": {
+    "category": "Electronics",
+    "inStock": true
+  }
+}
 ```
 
 ---
@@ -1538,22 +1870,46 @@ export const getProductStats = async (req: Request, res: Response) => {
 
 ```bash
 # Pagination
-GET /api/v1/products?page=1&limit=10
+curl "http://localhost:8080/api/v1/products?page=1&limit=10"
 
 # Filtering
-GET /api/v1/products?category=Electronics&inStock=true
+curl "http://localhost:8080/api/v1/products?category=Electronics&inStock=true"
 
 # Sorting
-GET /api/v1/products?sortBy=price&sortOrder=asc
+curl "http://localhost:8080/api/v1/products?sortBy=price&sortOrder=asc"
 
 # Search
-GET /api/v1/products/search?q=laptop
+curl "http://localhost:8080/api/v1/products/search?q=laptop"
 
 # Stats
-GET /api/v1/products/stats
+curl "http://localhost:8080/api/v1/products/stats"
 
 # Combined
-GET /api/v1/products?category=Electronics&sortBy=price&page=2&limit=5
+curl "http://localhost:8080/api/v1/products?category=Electronics&sortBy=price&page=2&limit=5"
+```
+
+**Search Output Example:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+      "name": "Laptop Pro 15\"",
+      "price": 1299.99,
+      "description": "High-performance laptop for professionals",
+      "category": "Electronics"
+    },
+    {
+      "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+      "name": "Gaming Laptop",
+      "price": 1599.99,
+      "description": "Powerful gaming laptop with RTX graphics",
+      "category": "Electronics"
+    }
+  ],
+  "searchQuery": "laptop"
+}
 ```
 
 
