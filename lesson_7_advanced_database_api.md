@@ -87,6 +87,17 @@ export const User = mongoose.model<IUser>('User', UserSchema);
    ```typescript
    User.findOne({ email: 'john@example.com' }) // Fast with index!
    ```
+   
+   **Output:**
+   ```json
+   {
+     "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+     "firstName": "John",
+     "lastName": "Doe",
+     "email": "john@example.com",
+     "createdAt": "2024-01-15T10:30:00.000Z"
+   }
+   ```
 
 2. **Unique Index** (`unique: true`)
    - Ensures no duplicate values
@@ -103,12 +114,42 @@ export const User = mongoose.model<IUser>('User', UserSchema);
    ```typescript
    User.find({ firstName: 'John', lastName: 'Doe' }) // Fast!
    ```
+   
+   **Output:**
+   ```json
+   [
+     {
+       "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+       "firstName": "John",
+       "lastName": "Doe",
+       "email": "john@example.com"
+     }
+   ]
+   ```
 
 4. **Text Index** (for search)
    - Enables full-text search
    - Example: Search users by name or email
    ```typescript
    User.find({ $text: { $search: 'john' } }) // Searches all text fields
+   ```
+   
+   **Output:**
+   ```json
+   [
+     {
+       "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+       "firstName": "John",
+       "lastName": "Doe",
+       "email": "john@example.com"
+     },
+     {
+       "_id": "64f8a1b2c3d4e5f6a7b8c9d1",
+       "firstName": "Johnny",
+       "lastName": "Smith",
+       "email": "johnny@example.com"
+     }
+   ]
    ```
 
 #### Product Model with Indexes
@@ -371,6 +412,45 @@ curl -X POST http://localhost:8080/api/v1/orders \
       {"productId": "123", "quantity": 2}
     ]
   }'
+```
+
+**Success Output:**
+```json
+{
+  "success": true,
+  "message": "Order created successfully",
+  "data": {
+    "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+    "user": "64f8a1b2c3d4e5f6a7b8c9d1",
+    "products": [
+      {
+        "product": "64f8a1b2c3d4e5f6a7b8c9d2",
+        "quantity": 2,
+        "price": 999.99
+      }
+    ],
+    "totalAmount": 1999.98,
+    "status": "pending",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+**Error Output (Insufficient Stock):**
+```json
+{
+  "success": false,
+  "message": "Insufficient stock for Laptop"
+}
+```
+
+**Error Output (Product Not Found):**
+```json
+{
+  "success": false,
+  "message": "Product 123 not found"
+}
+```
 
 # If product doesn't exist or insufficient stock:
 # - No order created
