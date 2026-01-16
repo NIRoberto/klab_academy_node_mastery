@@ -956,8 +956,8 @@ export const getPriceDistribution = async (req: Request, res: Response) => {
 };
 ```
 
----
 
+```
 ### 4. Population & References
 
 **What is Population?**
