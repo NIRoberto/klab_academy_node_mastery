@@ -24,11 +24,11 @@ File handling means allowing users to upload files (images, documents, etc.) to 
 **Multer** is a Node.js tool that helps handle file uploads easily.
 
 **Common Use Cases:**
-- 📸 Profile picture uploads (like Facebook profile pics)
-- 🛍️ Product image uploads (like Amazon product photos)
-- 📄 Document uploads (PDF, Word files)
-- 📊 CSV file imports (Excel-like data)
-- 🖼️ Multiple file uploads (photo galleries)
+- Profile picture uploads (like Facebook profile pics)
+- Product image uploads (like Amazon product photos)
+- Document uploads (PDF, Word files)
+- CSV file imports (Excel-like data)
+- Multiple file uploads (photo galleries)
 
 **Why do we need Multer?**
 - Regular Express.js can't handle file uploads by itself
@@ -105,7 +105,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (extname && mimetype) {
-    cb(null, true); // ✅ File is allowed
+    cb(null, true); // File is allowed
   } else {
     cb(new Error('Invalid file type. Only JPEG, PNG, GIF, PDF, DOC, DOCX are allowed.'));
   }
@@ -468,7 +468,7 @@ export const deleteFile = (filePath: string): void => {
   
   if (fs.existsExists(fullPath)) {
     fs.unlinkSync(fullPath);
-    console.log(`✅ File deleted: ${filePath}`);
+    console.log('File deleted: ' + filePath);
   }
 };
 
@@ -501,12 +501,12 @@ export const deleteMultipleFiles = (filePaths: string[]): void => {
 - Hard to scale
 
 **Cloudinary Benefits:**
-- ✅ Unlimited storage
-- ✅ Automatic image optimization
-- ✅ Global CDN (fast worldwide)
-- ✅ Image transformations (resize, crop, filters)
-- ✅ Free tier available
-- ✅ Backup and reliability
+- Unlimited storage
+- Automatic image optimization
+- Global CDN (fast worldwide)
+- Image transformations (resize, crop, filters)
+- Free tier available
+- Backup and reliability
 
 ### Cloudinary Setup
 
@@ -778,9 +778,9 @@ export const transporter = nodemailer.createTransport({
 // Verify connection
 transporter.verify((error, success) => {
   if (error) {
-    console.error('❌ Email configuration error:', error);
+    console.error('Email configuration error:', error);
   } else {
-    console.log('✅ Email server is ready to send messages');
+    console.log('Email server is ready to send messages');
   }
 });
 ```
@@ -887,7 +887,7 @@ export const passwordResetTemplate = (firstName: string, resetToken: string) => 
           <p>We received a request to reset your password. Click the button below to create a new password:</p>
           <a href="${resetUrl}" class="button">Reset Password</a>
           <div class="warning">
-            <strong>⚠️ Security Notice:</strong>
+            <strong>Security Notice:</strong>
             <p>This link will expire in 1 hour. If you didn't request this, please ignore this email.</p>
           </div>
           <p>Or copy and paste this link into your browser:</p>
@@ -919,7 +919,7 @@ export const orderConfirmationTemplate = (firstName: string, orderId: string, to
     <body>
       <div class="container">
         <div class="header">
-          <h1>✅ Order Confirmed!</h1>
+          <h1>Order Confirmed!</h1>
         </div>
         <div class="content">
           <h2>Thank you, ${firstName}!</h2>
@@ -971,9 +971,9 @@ const sendEmail = async (options: EmailOptions): Promise<void> => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent:', info.messageId);
+    console.log('Email sent:', info.messageId);
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
+    console.error('Email sending failed:', error);
     throw new Error('Failed to send email');
   }
 };
@@ -984,7 +984,7 @@ export const sendWelcomeEmail = async (
 ): Promise<void> => {
   await sendEmail({
     to: email,
-    subject: 'Welcome to Our Platform! 🎉',
+    subject: 'Welcome to Our Platform!',
     html: welcomeEmailTemplate(firstName, email),
   });
 };
@@ -996,7 +996,7 @@ export const sendPasswordResetEmail = async (
 ): Promise<void> => {
   await sendEmail({
     to: email,
-    subject: 'Password Reset Request 🔐',
+    subject: 'Password Reset Request',
     html: passwordResetTemplate(firstName, resetToken),
   });
 };
@@ -1009,7 +1009,7 @@ export const sendOrderConfirmationEmail = async (
 ): Promise<void> => {
   await sendEmail({
     to: email,
-    subject: `Order Confirmation - ${orderId} ✅`,
+    subject: `Order Confirmation - ${orderId}`,
     html: orderConfirmationTemplate(firstName, orderId, total),
   });
 };
@@ -1465,4 +1465,4 @@ export const createProductWithNotification = async (
 - [Nodemailer Documentation](https://nodemailer.com/)
 - [Email Template Best Practices](https://www.campaignmonitor.com/dev-resources/)
 
-Happy Coding! 🚀
+Happy Coding!
