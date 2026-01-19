@@ -48,11 +48,10 @@ const CartSchema = new Schema<ICart>({
 });
 
 // Calculate total amount before saving
-CartSchema.pre('save', function(next) {
+CartSchema.pre('save', function() {
   this.totalAmount = this.items.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
-  next();
 });
 
 export const Cart = mongoose.model<ICart>('Cart', CartSchema);

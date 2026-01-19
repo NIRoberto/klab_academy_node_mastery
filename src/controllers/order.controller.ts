@@ -111,12 +111,15 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     await session.commitTransaction();
 
     // Populate order for response
-    await order[0].populate('items.product', 'name price images category');
+    const createdOrder = order[0];
+    if (createdOrder) {
+      await createdOrder.populate('items.product', 'name price images category');
+    }
 
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: order[0]
+      data: createdOrder
     });
   } catch (error: any) {
     await session.abortTransaction();
@@ -185,6 +188,13 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const orderId = req.params.id;
 
+    if (!orderId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID and user authentication required'
+      });
+    }
+
     const order = await Order.findOne({ _id: orderId, user: userId })
       .populate('items.product', 'name price images category')
       .populate('user', 'firstName lastName email');
@@ -224,6 +234,13 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const orderId = req.params.id;
+
+    if (!orderId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID and user authentication required'
+      });
+    }
 
     const order = await Order.findOne({ _id: orderId, user: userId }).session(session);
     if (!order) {

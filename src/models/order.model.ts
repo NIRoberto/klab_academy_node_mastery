@@ -82,11 +82,10 @@ const OrderSchema = new Schema<IOrder>({
 });
 
 // Generate order number before saving
-OrderSchema.pre('save', function(next) {
+OrderSchema.pre('save', function() {
   if (!this.orderNumber) {
     this.orderNumber = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
   }
-  next();
 });
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);
