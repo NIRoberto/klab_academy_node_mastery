@@ -6,6 +6,8 @@ import logger from "./middlewares/logger";
 import userRouter from "./routes/users";
 import productsRouter from "./routes/products";
 import authenticationRouter from "./routes/auth";
+import cartRouter from "./routes/cart.routes";
+import orderRouter from "./routes/order.routes";
 
 const app = express();
 
@@ -33,6 +35,8 @@ const apiV1 = express.Router();
 apiV1.use("/users", userRouter);
 apiV1.use("/products", productsRouter);
 apiV1.use("/auth", authenticationRouter);
+apiV1.use("/cart", cartRouter);
+apiV1.use("/orders", orderRouter);
 
 app.use("/api/v1", apiV1);
 
