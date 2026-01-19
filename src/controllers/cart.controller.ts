@@ -103,16 +103,19 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
 
     if (existingItemIndex > -1) {
       // Update quantity if item exists
-      const newQuantity = cart.items[existingItemIndex].quantity + quantity;
-      
-      if (newQuantity > product.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Only ${product.quantity} items available in stock`
-        });
-      }
+      const existingItem = cart.items[existingItemIndex];
+      if (existingItem) {
+        const newQuantity = existingItem.quantity + quantity;
+        
+        if (newQuantity > product.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `Only ${product.quantity} items available in stock`
+          });
+        }
 
-      cart.items[existingItemIndex].quantity = newQuantity;
+        existingItem.quantity = newQuantity;
+      }
     } else {
       // Add new item to cart
       cart.items.push({
@@ -193,7 +196,10 @@ export const updateCartItem = async (req: AuthRequest, res: Response) => {
         });
       }
 
-      cart.items[itemIndex].quantity = quantity;
+      const cartItem = cart.items[itemIndex];
+      if (cartItem) {
+        cartItem.quantity = quantity;
+      }
     }
 
     await cart.save();
