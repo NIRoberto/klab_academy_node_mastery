@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import { User } from "../models/user.model";
 import { signToken } from "../utils/jwt.helper";
 import { AuthRequest } from "../middlewares/authenticate";
+import { sendWelcomeEmail } from "../service/email.service";
 
 // Constants for better maintainability
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || "12"); // Higher security than default 10
@@ -146,6 +147,11 @@ const register = async (req: Request, res: Response) => {
     // Remove password from response for security
     const { password: _, ...userResponse } = newUser.toObject();
 
+
+      sendWelcomeEmail(email, firstName).catch((err) => {
+        console.error("Failed to send welcome email:", err);
+        // Don't fail registration if email fails
+      });
     // Send success response with user data and token
     return sendSuccessResponse(
       res,

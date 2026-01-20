@@ -1,5 +1,6 @@
 import express from "express";
 import morgan from "morgan";
+import path from "path";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config";
 import logger from "./middlewares/logger";
@@ -14,6 +15,9 @@ const app = express();
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(logger);
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get("/", (req, res) => {
   return res.send("Welcome to my app  ");

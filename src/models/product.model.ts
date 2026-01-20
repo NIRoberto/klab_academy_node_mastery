@@ -1,13 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IProduct extends Document {
-  id: number;
   name: string;
   price: number;
   description?: string;
   category: string;
   inStock: boolean;
   quantity: number;
+  images: string[]; // Array of image URLs
 }
 
 const productSchema = new Schema<IProduct>({
@@ -33,6 +33,10 @@ const productSchema = new Schema<IProduct>({
   quantity: {
     type: Number,
     default: 1,
+  },
+  images: {
+    type: [String],
+    default: [],
   },
 });
 
