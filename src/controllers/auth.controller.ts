@@ -147,11 +147,19 @@ const register = async (req: Request, res: Response) => {
     // Remove password from response for security
     const { password: _, ...userResponse } = newUser.toObject();
 
-
-      sendWelcomeEmail(email, firstName).catch((err) => {
-        console.error("Failed to send welcome email:", err);
-        // Don't fail registration if email fails
+    // Send welcome email asynchronously (don't block registration)
+    sendWelcomeEmail(email, firstName)
+      .then(() => {
+        console.log(`✅ Welcome email sent successfully to ${email}`);
+      })
+      .catch((err) => {
+        console.error(`❌ Failed to send welcome email to ${email}:`, {
+          error: err.message,
+          code: err.code,
+          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
       });
+
     // Send success response with user data and token
     return sendSuccessResponse(
       res,
