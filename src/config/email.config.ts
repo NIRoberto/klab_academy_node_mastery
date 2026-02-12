@@ -16,14 +16,19 @@ export const transporter = nodemailer.createTransport({
   tls: {
     ciphers: 'SSLv3',
     rejectUnauthorized: false
-  }
+  },
+  pool: true, // Use pooled connections
+  maxConnections: 1, // Limit connections to save memory
+  maxMessages: 100 // Limit messages per connection
 });
 
-// Verify connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email configuration error:", error);
-  } else {
-    console.log("Email server is ready to send messages");
-  }
-});
+// Only verify in development to save memory
+if (process.env.NODE_ENV !== 'production') {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("Email configuration error:", error);
+    } else {
+      console.log("Email server is ready to send messages");
+    }
+  });
+}
