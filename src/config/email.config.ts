@@ -19,14 +19,20 @@ export const transporter = nodemailer.createTransport({
   },
   pool: true, // Use pooled connections
   maxConnections: 1, // Limit connections to save memory
-  maxMessages: 100 // Limit messages per connection
+  maxMessages: 100, // Limit messages per connection
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000, // 10 seconds
 });
 
-// Verify connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email configuration error:", error);
-  } else {
-    console.log("Email server is ready to send messages");
-  }
-});
+// Only verify in development (Render blocks SMTP ports)
+if (process.env.NODE_ENV === 'development') {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("Email configuration error:", error);
+    } else {
+      console.log("Email server is ready to send messages");
+    }
+  });
+} else {
+  console.log("Email verification skipped in production (SMTP may be blocked by hosting provider)");
+}
