@@ -4,15 +4,19 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Create transporter
+// Create transporter with STARTTLS (port 587)
 export const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.gmail.com",
   port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: false, // true for 465, false for other ports
+  secure: false, // false for STARTTLS
   auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASSWORD, // Your email password or app password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
+  tls: {
+    ciphers: 'SSLv3',
+    rejectUnauthorized: false
+  }
 });
 
 // Verify connection

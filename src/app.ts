@@ -22,8 +22,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get("/", async (req, res) => {
   try {
+    console.log('Attempting to send email...');
+    console.log('Email config:', {
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      user: process.env.EMAIL_USER,
+      hasPassword: !!process.env.EMAIL_PASSWORD
+    });
+    
     // Send email
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || 'noreply@yourapp.com',
       to: 'robertniyitanga3@gmail.com',
       subject: 'Welcome Endpoint Hit',
@@ -35,10 +43,15 @@ app.get("/", async (req, res) => {
       `
     });
     
+    console.log('Email sent successfully:', info.messageId);
     return res.send("Welcome to my app - Email sent!");
-  } catch (error) {
-    console.error('Email error:', error);
-    return res.send("Welcome to my app");
+  } catch (error: any) {
+    console.error('Email error details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+    return res.send("Welcome to my app - Email failed: " + error.message);
   }
 });
 
